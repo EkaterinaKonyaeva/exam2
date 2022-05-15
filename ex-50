@@ -1,0 +1,112 @@
+[ex2-50] Проверка при деактивации товара
+В папке local создаем папку php_interface и в ней создаем файл init.php в котором подключаем два файла если они существуют const.php и deactivation.php
+
+if(file_exists($_SERVER['DOCUMENT_ROOT'].'/local/php_interface/const.php')){
+     require_once($_SERVER['DOCUMENT_ROOT'].'/local/php_interface/const.php');
+  }
+  
+if(file_exists($_SERVER['DOCUMENT_ROOT'].'/local/php_interface/deactivation.php')){
+    require_once($_SERVER['DOCUMENT_ROOT'].'/local/php_interface/deactivation.php');
+}  
+Создаём вышеуказанные файлы. В файле const.php определяем константу, которая будет содержать ID инфоблока "продукция"
+
+define('PRODUCT_IBLOCK',2);
+
+bx.exam2/local/php_interface/init.php
+<?php
+/**
+ * @const "Путь к корневой директории"
+ */
+define("ROOT_DIR", $_SERVER["DOCUMENT_ROOT"]);
+
+/**
+ * Автозагрузка (Composer)
+ */
+if (file_exists(ROOT_DIR . "/local/vendor/autoload.php")) {
+    require_once(ROOT_DIR . "/local/vendor/autoload.php");
+}
+
+/**
+ * Константы
+ */
+if (file_exists(ROOT_DIR . '/local/php_interface/consts.php')) {
+    require_once(ROOT_DIR . '/local/php_interface/consts.php');
+}
+
+/**
+ * Обработчики
+ */
+if (file_exists(ROOT_DIR . '/local/php_interface/handlers.php')) {
+    require_once(ROOT_DIR . '/local/php_interface/handlers.php');
+}
+
+/**
+ * Задания
+ */
+if (file_exists(ROOT_DIR . '/local/php_interface/tasks.php')) {
+    require_once(ROOT_DIR . '/local/php_interface/tasks.php');
+}
+
+/**
+ * Агенты
+ */
+if (file_exists(ROOT_DIR . '/local/php_interface/agents.php')) {
+    require_once(ROOT_DIR . '/local/php_interface/agents.php');
+}
+
+/local/classes/Exam2/Handlers/lang/ru/DeactivationProductEx2Task50.php
+<?php
+$MESS["SHOW_COUNTER_ERROR_1"] = " Товар невозможно деактивировать, у него ";
+$MESS["SHOW_COUNTER_ERROR_2"] = " просмотра(ов)!";
+
+
+bx.exam2/local/classes/Exam2/Handlers/DeactivationProductEx2Task50.php
+<?php
+
+namespace Exam2\Handlers;
+
+use Bitrix\Main\Localization\Loc;
+
+Loc::LoadMessages(__FILE__);
+
+/**
+ * [ex2-50] Проверка при деактивации товара
+ *
+ * Class DeactivationProductEx2Task50
+ * @package Exam2\Handlers
+ */
+class DeactivationProductEx2Task50
+{
+    public static function onBeforeIBlockElementUpdateHandler(&$arFields)
+    {
+        if ($arFields['IBLOCK_ID'] == PRODUCT_IBLOCK_ID && $arFields['ACTIVE'] !== 'Y') {
+            $resElement = \CIBlockElement::GetByID($arFields['ID']);
+
+            if ($arElement = $resElement->Fetch()) {
+                $iShowCounter = $arElement['SHOW_COUNTER'];
+            }
+
+            if ($iShowCounter > 2) {
+                global $APPLICATION;
+                $APPLICATION->throwException(Loc::getMessage('SHOW_COUNTER_ERROR_1') . $iShowCounter . Loc::getMessage('SHOW_COUNTER_ERROR_2'));
+                return false;
+            }
+        }
+    }
+}
+
+local/php_interface/handlers.php
+/**
+ * Обработчики событий
+ */
+use Bitrix\Main\EventManager;
+
+// [ex2-50] Проверка при деактивации товара
+EventManager::getInstance()->addEventHandler(
+    "iblock",
+    "OnBeforeIBlockElementUpdate",
+    [
+        "Exam2\Handlers\DeactivationProductEx2Task50",
+        "onBeforeIBlockElementUpdateHandler"
+    ]
+);
