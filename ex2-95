@@ -1,0 +1,74 @@
+[ex2-95] Упростить меню в адмистративном разделе для контент-менеджера
+
+Суть: Убираем лишние пункты меню при его построении через функцию обработчик "OnBuildGlobalMenu"
+Для лишних ИБ просто запрещаем доступ к ним (это скроит их)
+CUser::GetUserGroupArray() - Метод возвращает ID групп которым принадлежит текущий авторизованный пользователь (как правило вызывается с объекта $USER). Нестатический метод.
+Регистрируем событие OnBuildGlobalMenu в файле eventhandler.php, которое мы подключили в файле 
+
+init.php
+<?php
+/**
+ * @const "Путь к корневой директории"
+ */
+define("ROOT_DIR", $_SERVER["DOCUMENT_ROOT"]);
+if (file_exists(ROOT_DIR . '/local/php_interface/handlers.php')) {
+    require_once(ROOT_DIR . '/local/php_interface/handlers.php');
+}
+
+local/php_interface/handlers.php 
+// [ex2-95] Упростить меню в адмистративном разделе для контент-менеджера
+EventManager::getInstance()->addEventHandler(
+    "main",
+    "OnBuildGlobalMenu",
+    [
+        "Exam2\Handlers\ContentMenuEx2Task95",
+        "onBuildGlobalMenuHandler"
+    ]
+);
+
+bx.exam2/local/classes/Exam2/Handlers/ContentMenuEx2Task95.php
+<?php
+
+namespace Exam2\Handlers;
+
+use Bitrix\Main\Localization\Loc;
+
+Loc::LoadMessages(__FILE__);
+
+/**
+ * [ex2-95] Упростить меню в адмистративном разделе для контент-менеджера
+ *
+ * Class ContentMenuEx2Task95
+ * @package Exam2\Handlers
+ */
+class ContentMenuEx2Task95
+{
+    public static function onBuildGlobalMenuHandler(&$aGlobalMenu, &$aModuleMenu)
+    {
+        global $USER;
+        // Если пользователь принадлежит группе "Контент-редакторы" (5) и не принадлежит группе "Администраторы" (1)
+        // тогда, изменяем структуру меню
+        if (in_array(5, $USER->GetUserGroupArray()) && !in_array(1, $USER->GetUserGroupArray())) {
+            // Пункт меню "Рабочий стол"
+            unset($aGlobalMenu['global_menu_desktop']);
+
+            // Убираем подпункты, если есть следующие родительские пункты меню
+            foreach ($aModuleMenu as $iKey => $sValue) {
+                /* Можно удалить лишние пункты
+                if ($aModuleMenu[$iKey]['parent_menu'] == 'global_menu_settings' // Настройки
+                    || $aModuleMenu[$iKey]['parent_menu'] == 'global_menu_services' // Сервисы
+                    || $aModuleMenu[$iKey]['parent_menu'] == 'global_menu_marketplace' // Маркетплейс
+                    || $aModuleMenu[$iKey]['items_id'] == 'menu_iblock' // Инфоблоки (Импорт, экспорт и т.п.)
+                ) {
+                    unset($aModuleMenu[$iKey]);
+                }
+                */
+
+                // Либо оставить только нужный
+                if ($aModuleMenu[$iKey]['items_id'] != 'menu_iblock_/news') {
+                    unset($aModuleMenu[$iKey]);
+                }
+            }
+        }
+    }
+}
