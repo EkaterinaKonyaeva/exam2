@@ -1,0 +1,56 @@
+[ex2-93] Записывать в Журнал событий открытие не существующих страниц сайта
+
+
+Проверяем в событии "OnEpilog" наличие константы ERROR_404 = "Y" заданной в файле 404.php, которое вызывается в конце визуальной части эпилога сайта.
+Если = "Y", пишем запись в журнал.
+
+bx.exam2/local/php_interface/handlers.php 
+
+// [ex2-93] Записывать в Журнал событий - открытие не существующих страниц сайта
+// Событие вызывается в конце визуальной части эпилога сайта
+// @see https://dev.1c-bitrix.ru/api_help/main/events/onepilog.php
+EventManager::getInstance()->addEventHandler(
+    "main",
+    "OnEpilog",
+    [
+        "Exam2\Handlers\Check404Ex2Task93",
+        "onEpilogHandler"
+    ]
+);
+
+bx.exam2/local/classes/Exam2/Handlers/Check404Ex2Task93.php
+
+<?php
+
+namespace Exam2\Handlers;
+
+use Bitrix\Main\Localization\Loc;
+
+Loc::LoadMessages(__FILE__);
+
+/**
+ * [ex2-93] Записывать в Журнал событий - открытие не существующих страниц сайта
+ *
+ * Class Check404Ex2Task93
+ *
+ * @package Exam2\Handlers
+ */
+class Check404Ex2Task93
+{
+    public static function onEpilogHandler()
+    {
+        if (defined("ERROR_404") && ERROR_404 === "Y") {
+            global $APPLICATION;
+
+            \CEventLog::Add(
+                [
+                    "SEVERITY"      => "INFO",
+                    "AUDIT_TYPE_ID" => "ERROR_404",
+                    "MODULE_ID"     => "main",
+                    // Возвращает путь к текущей странице относительно корня вместе с параметрами
+                    "DESCRIPTION"   => $APPLICATION->GetCurUri(),
+                ]
+            );
+        }
+    }
+}
