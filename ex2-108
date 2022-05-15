@@ -1,0 +1,84 @@
+[ex2-108] link rel="canonical" для детальной новости
+
+Задание очень похоже на [ex2-34]
+Создаём ИБ
+Создаём свойство в ИБ (задаём символьный код, права доступа - Для всех пользователей: Чтение)
+Добавляем элемент
+Добавляем фразу для параметра в lang-файл - .parameters.php Добавляем пункт в "дополнительные настройки" - .parameters.php 
+(тип - строка, значение по умолчанию - не нужно)
+Добавляем в detail.php наш параметр (передача вызова из комплексного news в news.detail)
+Добавляем свойство в "Управление структурой" через админку
+Пропишем в настройках, ID информационного блока для rel=canonical = 5
+Добавляем вывод ShowProperty в header.php
+Добавляем local/templates/furniture_pale-blue/components/bitrix/news/.default/bitrix/news.detail/.default/result_modifier.php
+        В result_modifier.php расширяем $arResult добавляя в него новый ключ CANONICAL, значением которого будет являться поля привязанного элемента и с помощью функции CBitrixComponent::setResultCacheKeys передаем данный ключ в некешируемую область, файл component_epilog.php
+Добавляем local/templates/furniture_pale-blue/components/bitrix/news/.default/bitrix/news.detail/.default/component_epilog.php
+        В component_epilog.php происходит проверка на наличие в массиве $arResult ключа CANONICAL и если условие выполняется, мы устанавливаем заданное свойство страницы
+Убираем код вывода ShowProperty из header.php, чтобы не было вывода с пустым параметром
+
+
+local/templates/furniture_pale-blue/components/bitrix/news/.default/.parameters.php
+    "CANONICAL" => Array(
+        "NAME" => GetMessage("CANONICAL"),
+        "TYPE" => "STRING",
+        "DEFAULT" => "",
+    ),
+    
+local/templates/furniture_pale-blue/components/bitrix/news/.default/bitrix/news.detail/.default/component_epilog.php
+
+<?php
+if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) {
+    die();
+}
+
+/*
+В component_epilog.php происходит проверка на наличие в массиве $arResult ключа CANONICAL и если условие выполняется, мы устанавливаем заданное свойство страницы
+*/
+
+// У автора в тексте - if($arParams['CANONICAL'] == 'Y'){ - так работать не будет
+if ($arParams['CANONICAL']) {
+    $APPLICATION->SetPageProperty("canonical", $arResult['CANONICAL']['NAME']);
+}
+
+local/templates/furniture_pale-blue/components/bitrix/news/.default/bitrix/news.detail/.default/result_modifier.php
+<?php
+if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) {
+    die();
+}
+
+/*
+В result_modifier.php расширяем $arResult добавляя в него новый ключ CANONICAL, значением которого будет являться поля привязанного элемента и с помощью функции CBitrixComponent::setResultCacheKeys передаем данный ключ в некешируемую область, файл component_epilog.php
+*/
+
+if ($arParams['CANONICAL']) {
+    $arFilter = [
+        'IBLOCK_ID' => $arParams['CANONICAL'],
+        'PROPERTY_CANONICAL' => $arResult['ID'], // ID новости
+    ];
+
+    $arSelect = [
+        'ID',
+        'IBLOCK_ID',
+        'NAME',
+        'PROPERTY_CANONICAL',
+    ];
+
+    $r = CIBlockElement::GetList(array(), $arFilter, false, false, $arSelect);
+
+    if ($res = $r->Fetch()) {
+        $arResult['CANONICAL'] = $res;
+    }
+
+    $this->__component->SetResultCacheKeys(['CANONICAL']);
+}
+
+
+local/templates/furniture_pale-blue/components/bitrix/news/.default/detail.php
+"CANONICAL" => $arParams["CANONICAL"],
+
+local/templates/furniture_pale-blue/components/bitrix/news/.default/lang/ru/.parameters.php
+$MESS["SPECIALDATE"] = "Установить свойство страницы specialdate";
+$MESS["CANONICAL"] = "ID информационного блока для rel=canonical"; 
+
+news/index.php
+"CANONICAL" => "5",
