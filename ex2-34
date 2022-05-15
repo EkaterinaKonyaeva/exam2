@@ -1,0 +1,380 @@
+[ex2-34] Установить значение тега meta «specialdate» в компоненте news.list
+Решение:
+Т.к. задание 1-е: копируем сначала шаблон "furniture_pale-blue"
+Добавляем свойство в "Управление структурой" через админку (Настройки > Настройки продукта > Настройки модулей > Управление структурой)
+Свойство корневого раздела устанавливаем: 100
+Добавляем тег в header.php + отображение свойства через CMain::ShowProperty
+Копируем шаблон комплексного компонента "news" (вместе с news.list и другими дочерними)
+Копируем файл из bitrix/components/bitrix/news/templates/.default/news.php и .parameters.php к себе в шаблон, + языковой /lang/ru/.parameters.php
+Добавляем свойство в параметры компонента .parameters.php для отображения в дополнительных настройках
+Добавляем "Установить свойство страницы specialdate" в lang-файл
+Добавляем в news.php наш параметр, чтобы он прокинулся в news.list
+Добавляем в news.list - 2 файла: result_modifier.php и component_epilog.php
+Отлавливаем значение и кэшируем в result_modifier.php
+Выводим значение в component_epilog.php (не кэшируется)
+
+Полезные свойства:
+CMain::ShowProperty
+CMain::SetPageProperty
+CBitrixComponent::setResultCacheKeys
+
+
+.section.php 
+<?
+$sSectionName = "Главная";
+$arDirProperties = array(
+$arDirProperties = Array(
+   "description" => "Мебельная компания осуществляет производство мебели на высококлассном оборудовании с применением минимальной доли ручного труда, что позволяет обеспечить высокое качество нашей продукции.",
+   "keywords" => "мягкая мебель, офисная мебель, мебель для кухни, детская мебель",
+   "robots" => "index, follow"
+   "specialdate" => "100",
+   "ROBOTS" => "index, follow"
+);
+
+local/templates/furniture_pale-blue/components/bitrix/news/.default/.parameters.php
+<?
+if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
+
+$arTemplateParameters = array(
+	"DISPLAY_DATE" => Array(
+		"NAME" => GetMessage("T_IBLOCK_DESC_NEWS_DATE"),
+		"TYPE" => "CHECKBOX",
+		"DEFAULT" => "Y",
+	),
+	"DISPLAY_PICTURE" => Array(
+		"NAME" => GetMessage("T_IBLOCK_DESC_NEWS_PICTURE"),
+		"TYPE" => "CHECKBOX",
+		"DEFAULT" => "Y",
+	),
+	"DISPLAY_PREVIEW_TEXT" => Array(
+		"NAME" => GetMessage("T_IBLOCK_DESC_NEWS_TEXT"),
+		"TYPE" => "CHECKBOX",
+		"DEFAULT" => "Y",
+	),
+    "SPECIALDATE" => Array(
+        "NAME" => GetMessage("SPECIALDATE"),
+        "TYPE" => "CHECKBOX",
+        "DEFAULT" => "Y",
+    ),
+	"USE_SHARE" => Array(
+		"NAME" => GetMessage("T_IBLOCK_DESC_NEWS_USE_SHARE"),
+		"TYPE" => "CHECKBOX",
+		"MULTIPLE" => "N",
+		"VALUE" => "Y",
+		"DEFAULT" =>"N",
+		"REFRESH"=> "Y",
+	),
+);
+
+if ($arCurrentValues["USE_SHARE"] == "Y")
+{
+	$arTemplateParameters["SHARE_HIDE"] = array(
+		"NAME" => GetMessage("T_IBLOCK_DESC_NEWS_SHARE_HIDE"),
+		"TYPE" => "CHECKBOX",
+		"VALUE" => "Y",
+		"DEFAULT" => "N",
+	);
+
+	$arTemplateParameters["SHARE_TEMPLATE"] = array(
+		"NAME" => GetMessage("T_IBLOCK_DESC_NEWS_SHARE_TEMPLATE"),
+		"DEFAULT" => "",
+		"TYPE" => "STRING",
+		"MULTIPLE" => "N",
+		"COLS" => 25,
+		"REFRESH"=> "Y",
+	);
+
+	if (strlen(trim($arCurrentValues["SHARE_TEMPLATE"])) <= 0)
+		$shareComponentTemlate = false;
+	else
+		$shareComponentTemlate = trim($arCurrentValues["SHARE_TEMPLATE"]);
+
+	include_once($_SERVER["DOCUMENT_ROOT"]."/bitrix/components/bitrix/main.share/util.php");
+
+	$arHandlers = __bx_share_get_handlers($shareComponentTemlate);
+
+	$arTemplateParameters["SHARE_HANDLERS"] = array(
+		"NAME" => GetMessage("T_IBLOCK_DESC_NEWS_SHARE_SYSTEM"),
+		"TYPE" => "LIST",
+		"MULTIPLE" => "Y",
+		"VALUES" => $arHandlers["HANDLERS"],
+		"DEFAULT" => $arHandlers["HANDLERS_DEFAULT"],
+	);
+
+	$arTemplateParameters["SHARE_SHORTEN_URL_LOGIN"] = array(
+		"NAME" => GetMessage("T_IBLOCK_DESC_NEWS_SHARE_SHORTEN_URL_LOGIN"),
+		"TYPE" => "STRING",
+		"DEFAULT" => "",
+	);
+
+	$arTemplateParameters["SHARE_SHORTEN_URL_KEY"] = array(
+		"NAME" => GetMessage("T_IBLOCK_DESC_NEWS_SHARE_SHORTEN_URL_KEY"),
+		"TYPE" => "STRING",
+		"DEFAULT" => "",
+	);
+}
+
+?> 
+
+local/templates/furniture_pale-blue/components/bitrix/news/.default/bitrix/news.list/.default/component_epilog.php
+@@ -0,0 +1,15 @@
+<?php
+if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) {
+    die();
+}
+
+/*
+В component_epilog.php происходит проверка на активность чекбокса и в положительном случае устанавливается новое свойство страницы следующим образом
+*/
+
+//dump($arResult['SPECIALDATE']);
+//dump($arParams['SPECIALDATE']);
+
+if ($arParams['SPECIALDATE'] == 'Y') {
+    $APPLICATION->SetPageProperty("specialdate", $arResult['SPECIALDATE']);
+} 
+
+local/templates/furniture_pale-blue/components/bitrix/news/.default/bitrix/news.list/.default/result_modifier.php
+<?php
+if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) {
+    die();
+}
+
+/*
+В result_modifier.php из массива $arResult берется дата активности новости отображаемой первой на странице и передается в файл component_epilog.php с помощью функции CBitrixComponent::setResultCacheKeys
+*/
+
+$arResult['SPECIALDATE'] = $arResult['ITEMS'][0]['ACTIVE_FROM'];
+$this->__component->SetResultCacheKeys(['SPECIALDATE']);
+
+local/templates/furniture_pale-blue/components/bitrix/news/.default/lang/ru/.parameters.php
+<?
+$MESS["T_IBLOCK_DESC_NEWS_DATE"] = "Выводить дату элемента";
+$MESS["T_IBLOCK_DESC_NEWS_PICTURE"] = "Выводить изображение для анонса";
+$MESS["T_IBLOCK_DESC_NEWS_TEXT"] = "Выводить текст анонса";
+$MESS["T_IBLOCK_DESC_NEWS_USE_SHARE"] = "Отображать панель соц. закладок";
+$MESS["T_IBLOCK_DESC_NEWS_SHARE_HIDE"] = "Не раскрывать панель соц. закладок по умолчанию";
+$MESS["T_IBLOCK_DESC_NEWS_SHARE_TEMPLATE"] = "Шаблон компонента панели соц. закладок";
+$MESS["T_IBLOCK_DESC_NEWS_SHARE_SYSTEM"] = "Используемые соц. закладки и сети";
+$MESS["T_IBLOCK_DESC_NEWS_SHARE_SHORTEN_URL_LOGIN"] = "Логин для bit.ly";
+$MESS["T_IBLOCK_DESC_NEWS_SHARE_SHORTEN_URL_KEY"] = "Ключ для для bit.ly";
+$MESS["SPECIALDATE"] = "Установить свойство страницы specialdate"; 
+
+
+local/templates/furniture_pale-blue/components/bitrix/news/.default/news.php
+<?if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)die();
+/** @var array $arParams */
+/** @var array $arResult */
+/** @global CMain $APPLICATION */
+/** @global CUser $USER */
+/** @global CDatabase $DB */
+/** @var CBitrixComponentTemplate $this */
+/** @var string $templateName */
+/** @var string $templateFile */
+/** @var string $templateFolder */
+/** @var string $componentPath */
+/** @var CBitrixComponent $component */
+$this->setFrameMode(true);
+?>
+
+<?if($arParams["USE_RSS"]=="Y"):?>
+	<?
+	if(method_exists($APPLICATION, 'addheadstring'))
+		$APPLICATION->AddHeadString('<link rel="alternate" type="application/rss+xml" title="'.$arResult["FOLDER"].$arResult["URL_TEMPLATES"]["rss"].'" href="'.$arResult["FOLDER"].$arResult["URL_TEMPLATES"]["rss"].'" />');
+	?>
+	<a href="<?=$arResult["FOLDER"].$arResult["URL_TEMPLATES"]["rss"]?>" title="rss" target="_self"><img alt="RSS" src="<?=$templateFolder?>/images/gif-light/feed-icon-16x16.gif" border="0" align="right" /></a>
+<?endif?>
+
+<?if($arParams["USE_SEARCH"]=="Y"):?>
+<?=GetMessage("SEARCH_LABEL")?><?$APPLICATION->IncludeComponent(
+	"bitrix:search.form",
+	"flat",
+	Array(
+		"PAGE" => $arResult["FOLDER"].$arResult["URL_TEMPLATES"]["search"]
+	),
+	$component
+);?>
+<br />
+<?endif?>
+<?if($arParams["USE_FILTER"]=="Y"):?>
+<?$APPLICATION->IncludeComponent(
+	"bitrix:catalog.filter",
+	"",
+	Array(
+		"IBLOCK_TYPE" => $arParams["IBLOCK_TYPE"],
+		"IBLOCK_ID" => $arParams["IBLOCK_ID"],
+		"FILTER_NAME" => $arParams["FILTER_NAME"],
+		"FIELD_CODE" => $arParams["FILTER_FIELD_CODE"],
+		"PROPERTY_CODE" => $arParams["FILTER_PROPERTY_CODE"],
+		"CACHE_TYPE" => $arParams["CACHE_TYPE"],
+		"CACHE_TIME" => $arParams["CACHE_TIME"],
+		"CACHE_GROUPS" => $arParams["CACHE_GROUPS"],
+		"PAGER_PARAMS_NAME" => $arParams["PAGER_PARAMS_NAME"],
+	),
+	$component
+);
+?>
+<br />
+<?endif?>
+<?$APPLICATION->IncludeComponent(
+	"bitrix:news.list",
+	"",
+	Array(
+		"IBLOCK_TYPE" => $arParams["IBLOCK_TYPE"],
+		"IBLOCK_ID" => $arParams["IBLOCK_ID"],
+		"NEWS_COUNT" => $arParams["NEWS_COUNT"],
+		"SORT_BY1" => $arParams["SORT_BY1"],
+		"SORT_ORDER1" => $arParams["SORT_ORDER1"],
+		"SORT_BY2" => $arParams["SORT_BY2"],
+		"SORT_ORDER2" => $arParams["SORT_ORDER2"],
+		"FIELD_CODE" => $arParams["LIST_FIELD_CODE"],
+		"PROPERTY_CODE" => $arParams["LIST_PROPERTY_CODE"],
+		"DETAIL_URL" => $arResult["FOLDER"].$arResult["URL_TEMPLATES"]["detail"],
+		"SECTION_URL" => $arResult["FOLDER"].$arResult["URL_TEMPLATES"]["section"],
+		"IBLOCK_URL" => $arResult["FOLDER"].$arResult["URL_TEMPLATES"]["news"],
+		"DISPLAY_PANEL" => $arParams["DISPLAY_PANEL"],
+		"SET_TITLE" => $arParams["SET_TITLE"],
+		"SET_LAST_MODIFIED" => $arParams["SET_LAST_MODIFIED"],
+		"MESSAGE_404" => $arParams["MESSAGE_404"],
+		"SET_STATUS_404" => $arParams["SET_STATUS_404"],
+		"SHOW_404" => $arParams["SHOW_404"],
+		"FILE_404" => $arParams["FILE_404"],
+		"INCLUDE_IBLOCK_INTO_CHAIN" => $arParams["INCLUDE_IBLOCK_INTO_CHAIN"],
+		"CACHE_TYPE" => $arParams["CACHE_TYPE"],
+		"CACHE_TIME" => $arParams["CACHE_TIME"],
+		"CACHE_FILTER" => $arParams["CACHE_FILTER"],
+		"CACHE_GROUPS" => $arParams["CACHE_GROUPS"],
+		"DISPLAY_TOP_PAGER" => $arParams["DISPLAY_TOP_PAGER"],
+		"DISPLAY_BOTTOM_PAGER" => $arParams["DISPLAY_BOTTOM_PAGER"],
+		"PAGER_TITLE" => $arParams["PAGER_TITLE"],
+		"PAGER_TEMPLATE" => $arParams["PAGER_TEMPLATE"],
+		"PAGER_SHOW_ALWAYS" => $arParams["PAGER_SHOW_ALWAYS"],
+		"PAGER_DESC_NUMBERING" => $arParams["PAGER_DESC_NUMBERING"],
+		"PAGER_DESC_NUMBERING_CACHE_TIME" => $arParams["PAGER_DESC_NUMBERING_CACHE_TIME"],
+		"PAGER_SHOW_ALL" => $arParams["PAGER_SHOW_ALL"],
+		"PAGER_BASE_LINK_ENABLE" => $arParams["PAGER_BASE_LINK_ENABLE"],
+		"PAGER_BASE_LINK" => $arParams["PAGER_BASE_LINK"],
+		"PAGER_PARAMS_NAME" => $arParams["PAGER_PARAMS_NAME"],
+		"DISPLAY_DATE" => $arParams["DISPLAY_DATE"],
+		"DISPLAY_NAME" => "Y",
+		"DISPLAY_PICTURE" => $arParams["DISPLAY_PICTURE"],
+		"DISPLAY_PREVIEW_TEXT" => $arParams["DISPLAY_PREVIEW_TEXT"],
+		"PREVIEW_TRUNCATE_LEN" => $arParams["PREVIEW_TRUNCATE_LEN"],
+		"ACTIVE_DATE_FORMAT" => $arParams["LIST_ACTIVE_DATE_FORMAT"],
+		"USE_PERMISSIONS" => $arParams["USE_PERMISSIONS"],
+		"GROUP_PERMISSIONS" => $arParams["GROUP_PERMISSIONS"],
+		"FILTER_NAME" => $arParams["FILTER_NAME"],
+		"HIDE_LINK_WHEN_NO_DETAIL" => $arParams["HIDE_LINK_WHEN_NO_DETAIL"],
+		"CHECK_DATES" => $arParams["CHECK_DATES"],
+        "SPECIALDATE" => $arParams["SPECIALDATE"],
+	),
+	$component
+);?>
+
+
+local/templates/furniture_pale-blue/header.php
+<meta property="specialdate" content="<? $APPLICATION->ShowProperty("specialdate") ?>">
+<title><?$APPLICATION->ShowTitle()?></title>
+
+news/index.php
+require($_SERVER["DOCUMENT_ROOT"]."/bitrix/header.php");
+$APPLICATION->SetTitle("Новости");
+?><?$APPLICATION->IncludeComponent(
+	"bitrix:news", 
+	".default", 
+	array(
+		"IBLOCK_TYPE" => "news",
+		"IBLOCK_ID" => "1",
+		"NEWS_COUNT" => "5",
+		"USE_SEARCH" => "N",
+		"USE_RSS" => "Y",
+		"NUM_NEWS" => "20",
+		"NUM_DAYS" => "30",
+		"YANDEX" => "N",
+		"USE_RATING" => "N",
+		"USE_CATEGORIES" => "N",
+		"USE_FILTER" => "N",
+		"SORT_BY1" => "ACTIVE_FROM",
+		"SORT_ORDER1" => "DESC",
+		"SORT_BY2" => "SORT",
+		"SORT_ORDER2" => "ASC",
+		"CHECK_DATES" => "Y",
+		"SEF_MODE" => "Y",
+		"SEF_FOLDER" => "/news/",
+		"AJAX_MODE" => "N",
+		"AJAX_OPTION_SHADOW" => "N",
+		"AJAX_OPTION_JUMP" => "Y",
+		"AJAX_OPTION_STYLE" => "Y",
+		"AJAX_OPTION_HISTORY" => "Y",
+		"CACHE_TYPE" => "A",
+		"CACHE_TIME" => "36000000",
+		"CACHE_FILTER" => "N",
+		"CACHE_GROUPS" => "Y",
+		"DISPLAY_PANEL" => "N",
+		"SET_TITLE" => "Y",
+		"SET_STATUS_404" => "Y",
+		"INCLUDE_IBLOCK_INTO_CHAIN" => "Y",
+		"ADD_SECTIONS_CHAIN" => "Y",
+		"USE_PERMISSIONS" => "N",
+		"PREVIEW_TRUNCATE_LEN" => "",
+		"LIST_ACTIVE_DATE_FORMAT" => "d.m.Y",
+		"LIST_FIELD_CODE" => array(
+			0 => "",
+			1 => "",
+		),
+		"LIST_PROPERTY_CODE" => array(
+			0 => "",
+			1 => "",
+		),
+		"HIDE_LINK_WHEN_NO_DETAIL" => "Y",
+		"DISPLAY_NAME" => "Y",
+		"META_KEYWORDS" => "-",
+		"META_DESCRIPTION" => "-",
+		"BROWSER_TITLE" => "-",
+		"DETAIL_ACTIVE_DATE_FORMAT" => "d.m.Y",
+		"DETAIL_FIELD_CODE" => array(
+			0 => "",
+			1 => "",
+		),
+		"DETAIL_PROPERTY_CODE" => array(
+			0 => "",
+			1 => "",
+		),
+		"DETAIL_DISPLAY_TOP_PAGER" => "N",
+		"DETAIL_DISPLAY_BOTTOM_PAGER" => "Y",
+		"DETAIL_PAGER_TITLE" => "Страница",
+		"DETAIL_PAGER_TEMPLATE" => "arrows",
+		"DETAIL_PAGER_SHOW_ALL" => "N",
+		"DISPLAY_TOP_PAGER" => "N",
+		"DISPLAY_BOTTOM_PAGER" => "Y",
+		"PAGER_TITLE" => "Новости",
+		"PAGER_SHOW_ALWAYS" => "N",
+		"PAGER_TEMPLATE" => "",
+		"PAGER_DESC_NUMBERING" => "N",
+		"PAGER_DESC_NUMBERING_CACHE_TIME" => "36000000",
+		"PAGER_SHOW_ALL" => "N",
+		"AJAX_OPTION_ADDITIONAL" => "",
+		"COMPONENT_TEMPLATE" => ".default",
+		"USE_REVIEW" => "N",
+		"SET_LAST_MODIFIED" => "N",
+		"ADD_ELEMENT_CHAIN" => "N",
+		"STRICT_SECTION_CHECK" => "N",
+		"DISPLAY_DATE" => "Y",
+		"DISPLAY_PICTURE" => "Y",
+		"DISPLAY_PREVIEW_TEXT" => "Y",
+		"SPECIALDATE" => "Y",
+		"USE_SHARE" => "N",
+		"DETAIL_SET_CANONICAL_URL" => "N",
+		"PAGER_BASE_LINK_ENABLE" => "N",
+		"SHOW_404" => "N",
+		"MESSAGE_404" => "",
+		"SEF_URL_TEMPLATES" => array(
+			"news" => "",
+			"section" => "",
+			"detail" => "#ELEMENT_ID#/",
+			"rss" => "rss/",
+			"rss_section" => "#SECTION_ID#/rss/",
+		)
+	),
+	false
+);?><?require($_SERVER["DOCUMENT_ROOT"]."/bitrix/footer.php");?> 
