@@ -1,0 +1,92 @@
+[ex2-81] Внести доработки в созданный простой компонент «Каталог товаров»
+
+
+    Задать нескольким выводимым символьным элементам каталога символьный код, т.к. по-умолчанию он пуст
+
+    Решение в компоненте [ex2-71]:
+        local/components/simplecomp/ex2-71/.parameters.php
+        $arComponentParameters = [
+        "GROUPS"     => [
+        ],
+        "PARAMETERS" => [
+            // ex2-81
+            "TEMPLATE_DETAIL_URL" => CIBlockParameters::GetPathTemplateParam(
+                "DETAIL",
+                "TEMPLATE_DETAIL_URL",
+                GetMessage("EX2_81_TEMPLATE_DETAIL_URL"),
+                "/catalog_exam/#SECTION_ID#/#ELEMENT_CODE#.php",
+                "URL_TEMPLATES"
+            ),
+        ]
+
+        local/components/simplecomp/ex2-71/component.php
+        if ($this->startResultCache(false, ($arParams["CACHE_GROUPS"] === "N" ? false : $USER->GetGroups()))) {
+            if (!Loader::includeModule("iblock")) {
+                $this->abortResultCache();
+                ShowError(GetMessage("EX2_71_IB_CHECK"));
+                return;
+            }
+
+            // Получаем элементы из каталога
+                $arSelectElems = [
+                    // Обязательно должно быть использованы поля IBLOCK_ID и ID для корректного получения свойств
+                    "ID",
+                    "IBLOCK_ID",
+                    "NAME",
+                    // URL ссылки на детальный просмотр
+                    "DETAIL_PAGE_URL",
+                    // ex2-81
+                    "IBLOCK_SECTION_ID",
+                    "CODE",        
+                ];
+
+                // ex2-81
+                // Установить сортировку отбираемых элементов из информационного блока каталога товаров:
+                // сначала по наименованию, затем по полю сортировки.
+                $arSortElems = [
+                    'NAME' => 'ASC',
+                    'SORT' => 'ASC'
+                ];
+
+                $arResult["ELEMENTS"] = [];
+
+                $resElements = \CIBlockElement::GetList(
+                    $arSortElems,
+                    $arFilterElems,
+                    false,
+                    false,
+                    $arSelectElems
+                );
+
+                // ex2-81
+                if ($arParams["TEMPLATE_DETAIL_URL"]) {
+                    // Устанавливает шаблоны путей для элементов, разделов
+                    // и списка элементов вместо тех которые указаны в настройках информационного блока.
+                    $resElements->SetUrlTemplates($arParams["TEMPLATE_DETAIL_URL"]);
+                }
+        }
+
+        local/components/simplecomp/ex2-71/templates/.default/template.php
+        
+
+        lang-файлы
+        local/components/simplecomp/ex2-71/templates/.default/lang/ru/template.php
+            <?
+            $MESS["EX2_71_CATALOG_TITLE"] = "Каталог: ";
+            $MESS["EX2_107_TIME_STAMP"] = "Метка времени: ";
+            $MESS["EX2_60_NAVIGATION"] = "Навигация:";
+            $MESS["EX2_49_FILTER"] = "Фильтр: ";
+        local/components/simplecomp/ex2-71/lang/ru/component.php
+            <?
+            $MESS["EX2_71_IB_CHECK"] = "Модуль информационных блоков не установлен!";
+            $MESS["EX2_71_SECTIONS"] = "Разделов: ";
+
+        local/components/simplecomp/ex2-71/lang/ru/.parameters.php
+            <?
+            $MESS ["EX2_71_ID_IB_CATALOG"] = "ID инфоблока с каталогом товаров";
+            $MESS ["EX2_71_ID_IB_CLASS"] = "ID инфоблока с классификатором";
+            $MESS ["EX2_71_CODE_PROPERTY"] = "Код свойства товара, в котором хранится привязка товара к классификатору";
+            $MESS ["CP_BPR_CACHE_GROUPS"] = "Учитывать права доступа";
+            $MESS ["EX2_60_ELEMENTS_PER_PAGE"] = "Количество элементов на странице";
+            $MESS ["EX2_81_TEMPLATE_DETAIL_URL"] = "Шаблон ссылки на детальный просмотр";
+            $MESS ["EX2_60_PAGER_TITLE"] = "Странички";
