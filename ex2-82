@@ -1,0 +1,99 @@
++ ex2-82
+
+    Основным инструментом служат следующие методы:
+        CMain::AddViewContent - позволяет указать место вывода контента, создаваемого ниже по коду с помощью метода ShowViewContent.
+        CMain::ShowViewContent - позволяет установить выводимый контент для функции AddViewContent.
+
+    Вычисляем минимальную и максимальную цены.
+
+    С помощью метода CMain::AddViewContent добавляем в буфер вывода значение максимальной и минимальной цены
+
+    local/components/simplecomp/ex2-70/lang/ru/class.php
+        $MESS["EX2_82_MIN_PRICE"] = "Минимальная цена: ";
+        $MESS["EX2_82_MAX_PRICE"] = "Максимальная цена: ";
+
+    bx.exam2/local/components/simplecomp/ex2-70/class.php
+    setArResult(){
+
+        $res = CIBlockElement::GetList([], $arFilter, false, false, $arSelect);
+
+        $iCount = 0;
+        $arAllPrice = [];
+        while ($arRes = $res->Fetch()) {
+            // Массив всех цен товаров
+            $arAllPrice[] = $arRes["PROPERTY_PRICE_VALUE"];
+            foreach ($arProductSectionsTotal as &$arSection) {
+                if ($arRes["IBLOCK_SECTION_ID"] == $arSection["ID"]) {
+                    // <ex2-58>
+                    $arButtons = CIBlock::GetPanelButtons(
+                        $arRes["IBLOCK_ID"],
+                        $arRes["ID"],
+                        0,
+                        ["SECTION_BUTTONS" => false, "SESSID" => false]
+                    );
+                    $arRes["EDIT_LINK"] = $arButtons["edit"]["edit_element"]["ACTION_URL"];
+                    $arRes["DELETE_LINK"] = $arButtons["edit"]["delete_element"]["ACTION_URL"];
+                    // </ex2-58>
+
+                    // Добавляем элементы товаров к секциям
+                    $arSection["ITEMS"][] = $arRes;
+                }
+            }
+            $iCount++;
+        }
+
+        // <ex2-82>
+        // Минимальная цена
+        $this->arResult["MIN_PRICE"] = min($arAllPrice);
+        // Максимальная цена
+        $this->arResult["MAX_PRICE"] = max($arAllPrice);
+        // </ex2-82>
+    }
+    executeComponent(){
+        в конец
+        // ex2-82
+        // AddViewContent - позволяет указать место вывода контента, создаваемого ниже по коду с помощью метода ShowViewContent.
+        $APPLICATION->AddViewContent(
+            "min_price",
+            GetMessage("EX2_82_MIN_PRICE") . $this->arResult["MIN_PRICE"]
+        );
+        $APPLICATION->AddViewContent(
+            "max_price",
+            GetMessage("EX2_82_MAX_PRICE") . $this->arResult["MAX_PRICE"]
+        );
+    }
+
+    $APPLICATION->AddViewContent('min_price', GetMessage('MIN_PRICE') . $this->arResult['MIN_PRICE']);
+    $APPLICATION->AddViewContent('max_price', GetMessage('MAX_PRICE') . $this->arResult['MAX_PRICE']);
+
+
+    В файле header.php размещаем верстку и выводим максимальную, и минимальную цены с помощью CMain::ShowViewContent
+
+    ShowViewContent('min_price')
+    ShowViewContent('max_price')
+
+    <div class="content-block">
+                    <div class="content-block-inner">
+                                                
+                        <?
+                        $APPLICATION->IncludeComponent("bitrix:search.form", "flat", Array(
+                            "PAGE" => "#SITE_DIR#search/",
+                        ),
+                            false
+                        );
+                        ?>
+                                            </div>
+                                        </div>
+
+                        <!-- <ex2-82> -->
+                        <div style="color:red; margin: 34px 15px 35px 15px">
+                            <div>
+                                <?= $APPLICATION->ShowViewContent('min_price'); ?>
+                            </div>
+                            <div>
+                                <?= $APPLICATION->ShowViewContent('max_price'); ?>
+                            </div>
+                        </div>
+                        <!-- </ex2-82> -->
+
+                        <div class="information-block">
