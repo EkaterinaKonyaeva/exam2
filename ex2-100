@@ -1,0 +1,42 @@
++ ex2-100
+
+
+    Решение в компоненте [ex2-70]
+        Логика: local/components/simplecomp/ex2-70/class.php
+        executeComponent(){
+            global $APPLICATION;
+            global $USER;
+
+            if (!Loader::includeModule("iblock")) {
+                ShowError(GetMessage("EX2_70_IB_CHECK"));
+                return;
+            }
+
+            // <ex2-100>
+            // Метод возвращает массив, описывающий набор кнопок для управления элементами инфоблока
+            $arButtons = CIBlock::GetPanelButtons($this->arParams["IBLOCK_CATALOG_ID"]);
+
+            // Добавляет новую кнопку к тем кнопкам компонента, которые отображаются в области компонента в режиме редактирования сайта
+            $this->AddIncludeAreaIcon(
+                [
+                    "TITLE"          => GetMessage("EX2_100_SUBMENU_TITLE"),
+                    "URL"            => $arButtons['submenu']['element_list']['ACTION_URL'],
+                    // Показать в контекстном меню
+                    "IN_PARAMS_MENU" => true,
+                ]
+            );
+            // </ex2-100>
+        }
+        Языковые фразы: local/components/simplecomp/ex2-70/lang/ru/class.php
+        <?php
+        $MESS["EX2_70_IB_CHECK"] = "Модуль информационных блоков не установлен!";
+        $MESS["EX2_70_ELEMENTS_COUNT"] = "В каталоге товаров представлено товаров: ";
+        $MESS["EX2_82_MIN_PRICE"] = "Минимальная цена: ";
+        $MESS["EX2_82_MAX_PRICE"] = "Максимальная цена: ";
+        $MESS["EX2_100_SUBMENU_TITLE"] = "ИБ в админке";
+
+   
+
+    Фактически, готовый код есть в компоненте news.line и CHM-справке
+
+    Располагать не внутри $this->StartResultCache()
