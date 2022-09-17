@@ -1,0 +1,65 @@
++ex2-107
+
+    В template.php компонента добавляем метку времени <?echo time();?>
+
+    Для запуска механизма необходимо определить константу в файле dbconn.php. (Это можно сделать простым включением Управляемого кеша на закладке Управляемый кеш на странице Настройки > Настройки продукта > Автокеширование.) Поэтому, просто включаем в админке.
+
+    define("BX_COMP_MANAGED_CACHE", true);
+
+    При этом в методе StartResultCache компонента будет вызываться StartTagCache с путем к кешу компонента (с учетом страницы). А в методе EndResultCache (который в свою очередь вызывается из IncludeComponentTemplate) - EndTagCache.
+
+    Сброс кеша вызывается из методов Add/Update/Delete для элементов, разделов и инфоблоков.
+
+    local/php_interface/consts.php
+    <?php
+    /**
+     * Файл с константами
+     */
+
+    // ИБ "[s1] Продукция"
+    define('PRODUCT_IBLOCK_ID', 2);
+    // ИБ "Метатеги"
+    define('METATAGS_IBLOCK_ID', 6);
+    // ИБ "Жалобы на новости"
+    define('COMPLAIN_NEWS_IBLOCK_ID', 8);
+    // ИБ "Услуги"
+    define('SERVICES_IBLOCK_ID', 3);
+
+    local/components/simplecomp/ex2-71/templates/.default/template.php
+    <p>
+        <?= GetMessage("EX2_107_TIME_STAMP") ?><? echo time(); ?>
+    </p>
+
+    local/components/simplecomp/ex2-71/templates/.default/lang/ru/template.php
+    $MESS["EX2_71_CATALOG_TITLE"] = "Каталог: ";
+    $MESS["EX2_107_TIME_STAMP"] = "Метка времени: ";
+
+    local/components/simplecomp/ex2-71/component.php
+    <?
+    if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) {
+        die();
+    }
+
+    use Bitrix\Main\Loader;
+
+    global $USER;
+
+    // [ex2-107]
+    global $CACHE_MANAGER;
+
+    if (!isset($arParams["CACHE_TIME"])) {
+        $arParams["CACHE_TIME"] = 36000000;
+    }
+
+    
+    if ($this->startResultCache(false, ($arParams["CACHE_GROUPS"] === "N" ? false : $USER->GetGroups()))) {
+        if (!Loader::includeModule("iblock")) {
+            $this->abortResultCache();
+            ShowError(GetMessage("EX2_71_IB_CHECK"));
+            return;
+        }
+
+        // [ex2-107]
+        // Помечаем кэш тегом
+        $CACHE_MANAGER->RegisterTag("iblock_id_" . SERVICES_IBLOCK_ID);
+    }
