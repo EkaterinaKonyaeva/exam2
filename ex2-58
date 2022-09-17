@@ -1,0 +1,109 @@
++ ex2-58
+    Логика: local/components/simplecomp/ex2-70/class.php
+
+    executeComponent(){
+
+
+        // <ex2-58>
+            if (
+                !empty($this->arParams["IBLOCK_CATALOG_ID"]) &&
+                $USER->IsAuthorized() &&
+                // Возвращает "true", если кнопка "Показать включаемые области" на панели управления нажата, в противном случае - "false".
+                $APPLICATION->GetShowIncludeAreas()
+            ) {
+                // Метод возвращает массив, описывающий набор кнопок для управления элементами инфоблока
+                $arButtons = CIBlock::GetPanelButtons(
+                    $this->arParams["IBLOCK_CATALOG_ID"],
+                    0,
+                    0,
+                    ["SECTION_BUTTONS" => false]
+                );
+                // Добавляет массив новых кнопок к тем кнопкам компонента, которые отображаются в области компонента в режиме редактирования сайта.
+                $this->addIncludeAreaIcons(CIBlock::GetComponentMenu($APPLICATION->GetPublicShowMode(), $arButtons));
+            }
+        // </ex2-58>
+    }
+
+    setArResult(){
+
+        $res = CIBlockElement::GetList([], $arFilter, false, false, $arSelect);
+
+        $iCount = 0;
+        $arAllPrice = [];
+        while ($arRes = $res->Fetch()) {
+            // Массив всех цен товаров
+            $arAllPrice[] = $arRes["PROPERTY_PRICE_VALUE"];
+            foreach ($arProductSectionsTotal as &$arSection) {
+                if ($arRes["IBLOCK_SECTION_ID"] == $arSection["ID"]) {
+                    // <ex2-58>
+                    $arButtons = CIBlock::GetPanelButtons(
+                        $arRes["IBLOCK_ID"],
+                        $arRes["ID"],
+                        0,
+                        ["SECTION_BUTTONS" => false, "SESSID" => false]
+                    );
+                    $arRes["EDIT_LINK"] = $arButtons["edit"]["edit_element"]["ACTION_URL"];
+                    $arRes["DELETE_LINK"] = $arButtons["edit"]["delete_element"]["ACTION_URL"];
+                    // </ex2-58>
+
+                    // Добавляем элементы товаров к секциям
+                    $arSection["ITEMS"][] = $arRes;
+                }
+            }
+            $iCount++;
+        }
+
+--------------------------------------------------------------------------
+        $arSelect = [
+            "ID",
+            "IBLOCK_ID",
+            "NAME",
+            "DATE_ACTIVE_FROM",
+        ];
+        $res = CIBlockElement::GetList([], $arFilter, false, false, $arSelect);
+
+        $i = 0;
+        while ($arRes = $res->Fetch()) {
+            // <ex2-58>
+            /*
+             * Отключаем управление разделами, по заданию
+             *
+            $arButtons = CIBlock::GetPanelButtons(
+                $arRes["IBLOCK_ID"],
+                $arRes["ID"],
+                0,
+                array("SECTION_BUTTONS" => false, "SESSID" => false)
+            );
+            $arRes["EDIT_LINK"] = $arButtons["edit"]["edit_element"]["ACTION_URL"];
+            $arRes["DELETE_LINK"] = $arButtons["edit"]["delete_element"]["ACTION_URL"];
+            */
+            // </ex2-58>
+
+            $this->arResult["ITEMS"][$i] = $arRes;
+            foreach ($arProductSectionsTotal as &$arSection2) {
+                foreach ($arSection2[$this->arParams["USER_PROPERTY"]] as $item) {
+                    if ($item == $arRes["ID"]) {
+                        $this->arResult["ITEMS"][$i]["ITEMS"][] = $arSection2;
+                    }
+                }
+            }
+            $i++;
+        }
+
+        // <ex2-58>
+        // Возвращает "true", если кнопка "Показать включаемые области" на панели управления нажата, в противном случае - "false".
+        /*
+         * Отключаем управление разделами, по заданию
+         *
+        if ($APPLICATION->GetShowIncludeAreas()) {
+            // Метод возвращает массив, описывающий набор кнопок для управления элементами инфоблока
+            $arButtons = CIBlock::GetPanelButtons(
+                $this->arParams["IBLOCK_NEWS_ID"],
+                0
+            );
+            // Добавляет массив новых кнопок к тем кнопкам компонента, которые отображаются в области компонента в режиме редактирования сайта.
+            $this->addIncludeAreaIcons(CIBlock::GetComponentMenu($APPLICATION->GetPublicShowMode(), $arButtons));
+        }
+        */
+        // </ex2-58>
+    }
