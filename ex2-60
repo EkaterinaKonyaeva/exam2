@@ -1,0 +1,10 @@
++ex2-60
+    Решение в компоненте [ex2-71]
+        local/components/simplecomp/ex2-71/.parameters.php
+        local/components/simplecomp/ex2-71/component.php
+        local/components/simplecomp/ex2-71/templates/.default/template.php
+        lang-файлы
+
+    Пример кода навигации:
+        bitrix/components/bitrix/news.list/.parameters.php
+        bitrix/components/bitrix/news.list/component.php
