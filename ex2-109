@@ -1,0 +1,40 @@
+[ex2-109] Изменить фон в шапке
+
+Задача решается так.
+Устанавливаем новое PageProperty, в Админке (Настройки - Настройки продукта - Настройки модулей – Управление структурой), во вкладке Настройки для сайтов
+head_style - Стиль для фона
+
+В шапке выводим с помощью ShowProperty.
+<div id='header' style='< ? $APPLICATION->ShowProperty('head_style') ? >'>
+
+catalog.element
+
+В result_modifier.php логика и получение данных. 
+if(!empty($arResult['DETAIL_PICTURE']["SRC'])) 
+{ 
+     $arResult['STYLE'] = 'background-image: url('.$arResult['DETAIL_PICTURE']["SRC'].'); background-size: contain;'; 
+
+}else{ 
+     $arResult['STYLE'] = ''; 
+} 
+
+$obComponent = $this->GetComponent(); 
+$obComponent->SetResultCacheKeys(array('STYLE')); 
+-----------------------------------------------------------------------------
+В component_epilog.php устанавливаем SetPageProperty
+
+
+ if(!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED!==true)die();
+
+ if(isset($arResult['STYLE']))
+ {
+     $APPLICATION->SetPageProperty('head_style', $arResult['STYLE']);
+ }
+ 
+ 
+ 
+ Изменить страницу-> Свойства страницы
+ background-color: red
+ 
+ 
+ 
