@@ -1,0 +1,25 @@
+[ех2-43] Изменить «слоган» в шаблоне сайта
+
+Задача решается так.
+Устанавливаем новое PageProperty, в Админке (Настройки - Настройки продукта - Настройки модулей – Управление структурой), во вкладке Настройки для сайтов
+slogan_head - Слоган в шапке сайта
+
+В шапке выводим с помощью ShowProperty.
+<div id='header' style='< ? $APPLICATION->ShowProperty('slogan_head') ? >'>
+
+catalog.element
+
+В result_modifier.php логика и получение данных. 
+$arResult["TEXT_FOR_SLOGAN"] = substr($arResult["~PREVIEW_TEXT"],3,50)."...";
+$obComponent = $this->GetComponent();
+$obComponent->SetResultCacheKeys(array("TEXT_FOR_SLOGAN"));
+?>
+-----------------------------------------------------------------------------
+В component_epilog.php устанавливаем SetPageProperty
+
+ <?if(!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true)die();
+$APPLICATION->SetPageProperty("slogan_head", $arResult["TEXT_FOR_SLOGAN"]);
+
+Изменить страницу-> Свойства страницы
+background-color: Слоган компании находится в этом месте
+
