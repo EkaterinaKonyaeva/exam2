@@ -1,0 +1,44 @@
+[ех2-86] Проверка количества пользователей на сайте
+Создаём почтовое событие и шаблон
+
+Создаем функцию ExamCheckCount(), подключаем через init.php
+
+bx.exam2/local/php_interface/init.php
+<?php
+
+    function ExamCheckCount()
+    {
+        $rsUsers = CUser::GetList($by = "DATE_REGISTER", $oreder = "ASC", []);
+        $arUsers = [];
+    
+        while($arUser = $rsUsers->Fetch()) {
+            $arUsers[] = $arUser;
+        }
+    
+        $count = count($arUsers);
+    
+        $rsAdmins = CUser::GetList($by = "ID", $oreder = "ASC", ["GROUP_ID" => 1]);
+       
+        while($admin = $rsAdmins->Fetch()) {
+              CEvent::Send(
+              "COUNT_REG_USERS",
+              ["ru"],
+              [
+              "EMAIL_TO" => $admin["EMAIL"],
+              "COUNT_USERS" => $count,
+              ],
+              "N",
+              "30"
+              );
+        }
+
+    return "ExamCheckCount();";
+    }
+
+
+Создаем агента для вызова данной функции с параметрами в АДМИНКЕ:
+
+    Дата и время следующего запуска: 10.12.2019 01:00:00
+    Функция агента: ExamCheckCount();
+    Периодичность выполнения: через заданный интервал
+    Интервал (сек.): 86400 (24 часа)
