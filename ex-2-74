@@ -1,0 +1,19 @@
+[ех2-74] Проверка текста при создании новости
+
+В папке local создаем папку php_interface и в ней создаем файл init.php
+
+
+AddEventHandler("iblock", "OnBeforeIBlockElementAdd", Array("MyClass", "OnBeforeIBlockElementAddHandler"));
+
+class MyClass
+{
+    // создаем обработчик события "OnBeforeIBlockElementAdd"
+    public static function OnBeforeIBlockElementAddHandler(&$arFields)
+    {
+      if($arFields["IBLOCK_ID"] == 1 && strripos($arFields["PREVIEW_TEXT"], "калейдоскоп") !== false){
+          global $APPLICATION;
+          $APPLICATION->throwException("мы не используем слово калейдоскоп!!!");
+          return false;
+      }
+    }
+}
