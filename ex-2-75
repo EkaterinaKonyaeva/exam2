@@ -1,0 +1,24 @@
+[ех2-75] Проверка текста при изменении новости
+
+В папке local создаем папку php_interface и в ней создаем файл init.php
+
+AddEventHandler("iblock", "OnAfterIBlockElementUpdate", Array("MyClass", "OnAfterIBlockElementUpdateHandler"));
+class MyClass
+{
+    public static function OnAfterIBlockElementUpdateHandler(&$arFields)
+    {
+        $el = new CIBlockElement;
+        if($arFields["IBLOCK_ID"] == 1 ){
+            if(strripos($arFields["PREVIEW_TEXT"], "калейдоскоп") !== false) {
+                $newText = str_ireplace("калейдоскоп", '[...]', $arFields["PREVIEW_TEXT"]);
+                CEventLog::Add([
+                "SEVERITY" => "SECURITY",
+                "AUDIT_TYPE_ID" => "MY_OWN_TYPE",
+                "MODULE_ID" => "main",
+                "ITEM_ID" => "замена слова калейдоскоп на [...], в новости с ID=".$arFields["ID"]
+                ]);
+                $el->Update($arFields["ID"], ['PREVIEW_TEXT' => $newText]);
+            }
+        }
+    }
+}
