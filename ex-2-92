@@ -1,0 +1,24 @@
+[ex2-92] Задать особую индексацию для элементов инфоблока «Новости»
+
+
+В папке local создаем папку php_interface и в ней создаем файл init.php
+
+
+AddEventHandler("search", "BeforeIndex", Array("SearchExclude", "BeforeIndexHandler"));
+class SearchExclude
+{
+    public static function BeforeIndexHandler($arFields)
+    {
+        if ($arFields["MODULE_ID"] == "iblock" && $arFields["PARAM2"] == 1)
+        {
+            $el = new CIBlockElement;
+            $res = CIBlockElement::GetByID($arFields["ITEM_ID"]);
+            if($ar_res = $res->GetNext()){
+                if(!empty($ar_res['~PREVIEW_TEXT'])){
+                    $arFields['TITLE'] = mb_substr($ar_res['~PREVIEW_TEXT'], 0, 50) . '...';
+                }
+            }
+        }
+        return $arFields;
+    }
+}
